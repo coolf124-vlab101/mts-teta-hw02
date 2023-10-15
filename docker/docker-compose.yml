@@ -5,6 +5,7 @@ services:
     build: ../monitoring/prometheus
     image: ${USERNAME}/prometheus
     extra_hosts:
+     - "balancer-01:10.0.10.2"
      - "db-01:10.0.10.3"
      - "db-02:10.0.10.4"
      - "etcd-01:10.0.10.5"
@@ -38,7 +39,7 @@ services:
       back_net:
         aliases:
           - node-exporter
-          - balancer-01
+          - prom-01
 
   blackbox-exporter:
     build: ../monitoring/blackbox
