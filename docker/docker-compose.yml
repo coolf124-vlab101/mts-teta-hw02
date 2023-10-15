@@ -1,0 +1,78 @@
+version: '3.3'
+services:
+
+  prometheus:
+    build: ../monitoring/prometheus
+    image: ${USERNAME}/prometheus
+    extra_hosts:
+     - "db-01:10.0.10.3"
+     - "db-02:10.0.10.4"
+     - "balancer-01:10.0.10.2"
+     - "etcd-01:10.0.10.5"
+     - "etcd-02:10.0.10.6"
+     - "etcd-03:10.0.10.7"
+     - "prom-01:10.0.10.8"
+    ports:
+      - '9090:9090'
+    volumes:
+      - prometheus_data:/prometheus
+      - ../monitoring/prometheus/:/etc/prometheus/
+    command: # Передаем доп параметры в командной строке
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention=1d' # Задаем время хранения метрик в 1 день
+    networks:
+      - back_net
+  
+  node-exporter:
+    image: prom/node-exporter:v0.15.2
+    user: root
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.ignored-mount-points="^/(sys|proc|dev|host|etc)($$|/)"'
+    networks:
+      - back_net
+
+  blackbox-exporter:
+    build: ../monitoring/blackbox
+    image: coolf124/blackbox:latest
+    extra_hosts:
+     - "9f5f69f6-aa8c-4658-abf1-f6deeb4ebbba.mts-gslb.ru:91.185.85.213"
+    volumes:
+      - ../monitoring/blackbox/blackbox.yml:/etc/blackboxexporter/blackbox.yml
+    command:
+      - '--config.file=/etc/blackboxexporter/blackbox.yml'
+    ports:
+      - '9115:9115'
+    networks:
+      back_net:
+        aliases:
+          - blackbox
+  alertmanager:
+    image: prom/alertmanager
+    ports:
+      - 9093:9093
+    volumes:
+      - ../monitoring/alertmanager/:/etc/alertmanager/
+    restart: always
+    command:
+      - '--config.file=/etc/alertmanager/config.yml'
+      - '--storage.path=/alertmanager'
+    deploy:
+      mode: global
+    networks:
+      back_net:
+        aliases:
+          - alertmanager
+volumes:
+  prometheus_data:
+  
+networks:
+  back_net:
+  front_net:
+
