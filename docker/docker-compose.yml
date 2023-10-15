@@ -7,7 +7,6 @@ services:
     extra_hosts:
      - "db-01:10.0.10.3"
      - "db-02:10.0.10.4"
-     - "balancer-01:10.0.10.2"
      - "etcd-01:10.0.10.5"
      - "etcd-02:10.0.10.6"
      - "etcd-03:10.0.10.7"
@@ -36,7 +35,10 @@ services:
       - '--path.sysfs=/host/sys'
       - '--collector.filesystem.ignored-mount-points="^/(sys|proc|dev|host|etc)($$|/)"'
     networks:
-      - back_net
+      back_net:
+        aliases:
+          - node-exporter
+          - balancer-01
 
   blackbox-exporter:
     build: ../monitoring/blackbox
